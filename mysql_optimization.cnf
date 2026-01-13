@@ -1,0 +1,63 @@
+# ========================================
+# MYSQL OPTIMIZATION FOR VPS (2 Core, 2GB RAM, 40GB SSD)
+# ========================================
+#
+# Add these settings to: /etc/mysql/mysql.conf.d/mysqld.cnf
+# Under [mysqld] section
+# Then restart: sudo systemctl restart mysql
+
+[mysqld]
+
+# ========== Memory Settings (2GB RAM) ==========
+# For 2GB RAM systems
+key_buffer_size = 256M
+max_allowed_packet = 256M
+thread_stack = 192K
+thread_cache_size = 8
+myisam_recover_options = BACKUP
+
+# InnoDB settings (better for production)
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+# ========== Query Optimization ==========
+max_connections = 200
+max_user_connections = 100
+sort_buffer_size = 512K
+bulk_insert_buffer_size = 16M
+tmp_table_size = 32M
+max_heap_table_size = 32M
+
+# ========== Query Cache (if not using Redis) ==========
+query_cache_type = 1
+query_cache_size = 32M
+query_cache_limit = 2M
+
+# ========== Logging and Indexing ==========
+log_queries_not_using_indexes = 1
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow-query.log
+long_query_time = 2
+
+# ========== Binary Logging for Backups ==========
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_format = ROW
+expire_logs_days = 7
+
+# ========== Connection Pool ==========
+wait_timeout = 600
+interactive_timeout = 600
+net_read_timeout = 30
+net_write_timeout = 30
+
+# ========== Character Set ==========
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+skip-character-set-client-handshake
+
+# ========== Performance ==========
+default_storage_engine = InnoDB
+table_definition_cache = 1024
+table_open_cache = 2048

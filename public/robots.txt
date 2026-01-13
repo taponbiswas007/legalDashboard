@@ -1,0 +1,39 @@
+# SK Sharif & Associates - SEO Optimized Robots.txt
+# Allows search engines to crawl public pages while protecting admin/system areas
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /vendor/
+Disallow: /storage/
+Disallow: /bootstrap/
+Disallow: /config/
+Disallow: /database/
+Disallow: /resources/
+Disallow: /routes/
+Disallow: /tests/
+Disallow: /node_modules/
+Disallow: /*.json
+Disallow: /?
+Disallow: /search?
+Allow: /sitemap.xml
+
+# Googlebot
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+
+# Crawl delay (time in seconds between requests)
+Request-rate: 1 request per 2 seconds
+
+# Sitemap location
+Sitemap: https://sksharifandassociates.com/sitemap.xml
