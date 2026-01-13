@@ -9,8 +9,10 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use App\Exports\ClientCasesExport;
+use App\Models\Approval;
 use Maatwebsite\Excel\Facades\Excel;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 
 class AddclientController extends Controller
@@ -20,7 +22,7 @@ class AddclientController extends Controller
      */
     public function index()
     {
-        $addclients = Addclient::all();
+        $addclients = Addclient::where('auth_id', Auth::user()->id)->get();
         return view('backendPage.addclient.index', [
             'addclients' => $addclients
         ]);
@@ -40,34 +42,31 @@ class AddclientController extends Controller
      */
     public function store(Request $request)
     {
-
-
-
         $request->validate([
             'name' => 'required',
             'email' => [
                 'nullable',
                 'email',
-                Rule::unique('addclients'), // Ensure email is unique
+                Rule::unique('addclients')->where(function ($query) {
+                    return $query->where('auth_id', Auth::user()->id);
+                }),
             ],
             'number' => [
                 'nullable',
                 'numeric',
-                Rule::unique('addclients'), // Ensure number is unique
+                Rule::unique('addclients')->where(function ($query) {
+                    return $query->where('auth_id', Auth::user()->id);
+                }),
             ],
             'address' => 'nullable',
             'status' => 'nullable',
         ], [
-            'email.unique' => 'This email is already in use.', // Custom error message
-            'number.unique' => 'This number is already in use.', // Custom error message
+            'email.unique' => 'This email is already in use.',
+            'number.unique' => 'This number is already in use.',
         ]);
 
-
-
-
-
-
         $addclients = new Addclient();
+        $addclients->auth_id = Auth::user()->id;
         $addclients->name = $request->name;
         $addclients->email = $request->email;
         $addclients->number = $request->number;
@@ -85,8 +84,7 @@ class AddclientController extends Controller
     public function show(Request $request, $id)
     {
         $decryptedId = Crypt::decrypt($id);
-        $addclient = AddClient::findOrFail($decryptedId);
-
+        $addclient = Addclient::where('auth_id', Auth::user()->id)->findOrFail($decryptedId);
         $baseQuery = Addcase::where('client_id', $decryptedId);
 
         // 🔹 Filters
@@ -143,12 +141,8 @@ class AddclientController extends Controller
      */
     public function edit($id)
     {
-        // Decrypt the encrypted ID
         $decryptedId = Crypt::decrypt($id);
-
-        // Find the client using the decrypted ID
-        $addclient = AddClient::findOrFail($decryptedId);
-
+        $addclient = Addclient::where('auth_id', Auth::user()->id)->findOrFail($decryptedId);
         return view('backendPage.addclient.edit', compact('addclient'));
     }
 
@@ -158,33 +152,37 @@ class AddclientController extends Controller
      */
     public function update(Request $request, Addclient $addclient)
     {
-
+        if ($addclient->auth_id !== Auth::user()->id) {
+            abort(403, 'Unauthorized action.');
+        }
         $request->validate([
             'name' => 'required',
             'email' => [
                 'nullable',
                 'email',
-                Rule::unique('addclients')->ignore($addclient->id), // Ensure email is unique, ignoring the current client
+                Rule::unique('addclients')->ignore($addclient->id)->where(function ($query) {
+                    return $query->where('auth_id', Auth::user()->id);
+                }),
             ],
             'number' => [
                 'nullable',
                 'numeric',
-                Rule::unique('addclients')->ignore($addclient->id), // Ensure number is unique, ignoring the current client
+                Rule::unique('addclients')->ignore($addclient->id)->where(function ($query) {
+                    return $query->where('auth_id', Auth::user()->id);
+                }),
             ],
             'address' => 'nullable',
             'status' => 'nullable',
         ], [
-            'email.unique' => 'This email is already in use.', // Custom error message
-            'number.unique' => 'This number is already in use.', // Custom error message
+            'email.unique' => 'This email is already in use.',
+            'number.unique' => 'This number is already in use.',
         ]);
-
         $addclient->name = $request->name;
         $addclient->email = $request->email;
         $addclient->number = $request->number;
         $addclient->address = $request->address;
         $addclient->status = $request->status == true ? 1 : 0;
         $addclient->save();
-
         return redirect()->route('addclient.index')->with('success', 'Client updated successfully');
     }
 
@@ -193,42 +191,40 @@ class AddclientController extends Controller
      */
     public function destroy(Addclient $addclient)
     {
-
+        if ($addclient->auth_id !== Auth::user()->id) {
+            abort(403, 'Unauthorized action.');
+        }
         $addclient->delete();
         return redirect()->route('addclient.index')->with('success', 'Client deleted successfully');
     }
 
     public function exportClientExcel(Request $request, $id)
-{
-    $decryptedId = Crypt::decrypt($id);
-    $addclient = AddClient::findOrFail($decryptedId);
-
-    $tab = $request->get('tab', 'running');
-
-    return Excel::download(
-        new ClientCasesExport($decryptedId, $request->all() + ['tab' => $tab]),
-        'client_' . $addclient->name . '_' . $tab . '_cases.xlsx'
-    );
-}
-
-
-   public function exportClientPdf(Request $request, $id)
     {
         $decryptedId = Crypt::decrypt($id);
-        $addclient = AddClient::findOrFail($decryptedId);
+        $addclient = Addclient::findOrFail($decryptedId);
+        $tab = $request->get('tab', 'running');
+        return Excel::download(
+            new ClientCasesExport($decryptedId, $request->all() + ['tab' => $tab]),
+            'client_' . $addclient->name . '_' . $tab . '_cases.xlsx'
+        );
+    }
 
-        // Start base query
+
+    public function exportClientPdf(Request $request, $id)
+    {
+        $decryptedId = Crypt::decrypt($id);
+        $addclient = Addclient::findOrFail($decryptedId);
         $query = Addcase::where('client_id', $decryptedId);
 
         // Text filters
-        foreach (['file_number','name_of_parties','court_name','case_number','section'] as $field) {
+        foreach (['file_number', 'name_of_parties', 'court_name', 'case_number', 'section'] as $field) {
             if ($request->filled($field)) {
                 $query->where($field, 'like', "%{$request->$field}%");
             }
         }
 
         // Date filters
-        foreach (['legal_notice_date','filing_or_received_date','previous_date','next_hearing_date'] as $dateField) {
+        foreach (['legal_notice_date', 'filing_or_received_date', 'previous_date', 'next_hearing_date'] as $dateField) {
             if ($request->filled($dateField)) {
                 $query->whereDate($dateField, $request->$dateField);
             }
@@ -240,7 +236,7 @@ class AddclientController extends Controller
         $cases = $query->where('status', $tab === 'disposal' ? 0 : 1)->get();
 
         // Generate PDF
-        $pdf = PDF::loadView('backendPage.addclient.exports.client_cases_pdf', [
+        $pdf = Pdf::loadView('backendPage.addclient.exports.client_cases_pdf', [
             'addclient' => $addclient,
             'cases' => $cases,
             'tab' => $tab
@@ -251,4 +247,58 @@ class AddclientController extends Controller
         return $pdf->download($fileName);
     }
 
+    /**
+     * Show pending addclient approvals for the user to finalize.
+     */
+    public function pendingApprovals()
+    {
+        $approvals = Approval::where('user_id', Auth::user()->id)
+            ->where('model_type', 'Addclient')
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')
+            ->get();
+        return view('backendPage.addclient.approvals', compact('approvals'));
+    }
+
+    /**
+     * Finalize (approve) a pending addclient request.
+     */
+    public function finalizeApproval($approvalId)
+    {
+        $approval = Approval::findOrFail($approvalId);
+        if ($approval->user_id !== Auth::user()->id || $approval->status !== 'pending') {
+            abort(403, 'Unauthorized action.');
+        }
+        $data = json_decode($approval->new_data, true);
+        $exists = Addclient::where('email', $data['email'])
+            ->where('auth_id', Auth::user()->id)
+            ->orWhere(function ($q) use ($data) {
+                $q->where('number', $data['number'])->where('auth_id', Auth::user()->id);
+            })->exists();
+        if ($exists) {
+            return redirect()->route('addclient.approvals')->with('error', 'A client with this email or number already exists for your account.');
+        }
+        $client = new Addclient($data);
+        $client->auth_id = Auth::user()->id;
+        $client->status = 1;
+        $client->save();
+        $approval->status = 'approved';
+        $approval->model_id = $client->id;
+        $approval->save();
+        return redirect()->route('addclient.approvals')->with('success', 'Client approved and added successfully.');
+    }
+
+    /**
+     * Reject a pending addclient request.
+     */
+    public function rejectApproval($approvalId)
+    {
+        $approval = Approval::findOrFail($approvalId);
+        if ($approval->user_id !== Auth::user()->id || $approval->status !== 'pending') {
+            abort(403, 'Unauthorized action.');
+        }
+        $approval->status = 'rejected';
+        $approval->save();
+        return redirect()->route('addclient.approvals')->with('success', 'Client request rejected.');
+    }
 }

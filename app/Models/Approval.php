@@ -13,6 +13,8 @@ class Approval extends Model
         'user_id',
         'manager_id',
         'action_type',
+        'model_type',   // <-- add this
+        'model_id',     // <-- add this
         'old_data',
         'new_data',
         'status',

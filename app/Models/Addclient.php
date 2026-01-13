@@ -9,7 +9,7 @@ class Addclient extends Model
 {
     use HasFactory;
     protected $table = 'addclients';
-    protected $fillable = ['name', 'email', 'number', 'address', 'status'];
+    protected $fillable = ['auth_id', 'name', 'email', 'number', 'address', 'status'];
 
     public function addclient()
     {

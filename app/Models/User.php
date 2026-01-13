@@ -13,6 +13,17 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Check if the user has a specific role.
+     *
+     * @param string $role
+     * @return bool
+     */
+    public function hasRole($role)
+    {
+        return $this->role === $role;
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
