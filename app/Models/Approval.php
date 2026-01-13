@@ -13,12 +13,10 @@ class Approval extends Model
         'user_id',
         'manager_id',
         'action_type',
-        'model_type',
-        'model_id',
         'old_data',
         'new_data',
         'status',
-        'rejection_note',
+        'note',
     ];
 
     protected $casts = [
@@ -28,7 +26,7 @@ class Approval extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     public function manager()

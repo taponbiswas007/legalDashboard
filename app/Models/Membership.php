@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Laravel\Jetstream\Membership as JetstreamMembership;
+// ...existing code...
 
-class Membership extends JetstreamMembership
+class Membership
 {
     /**
      * Indicates if the IDs are auto-incrementing.

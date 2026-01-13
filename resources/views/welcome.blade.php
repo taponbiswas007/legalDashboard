@@ -57,7 +57,7 @@
                     </a>
                     <div class="d-flex align-items-center justify-content-end gap-4">
                         <ul>
-                            <li><a class="active" href="index.html">Home</a></li>
+                            <li><a class="active" href="index.html">Dashboard</a></li>
                             <li><a href="about.html">About</a></li>
                             <li><a href="">Practice</a></li>
                             <li><a href="">Attorney</a></li>

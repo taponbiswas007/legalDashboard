@@ -3,12 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Laravel\Jetstream\Events\TeamCreated;
-use Laravel\Jetstream\Events\TeamDeleted;
-use Laravel\Jetstream\Events\TeamUpdated;
-use Laravel\Jetstream\Team as JetstreamTeam;
+// ...existing code...
 
-class Team extends JetstreamTeam
+class Team
 {
     /** @use HasFactory<\Database\Factories\TeamFactory> */
     use HasFactory;
@@ -28,11 +25,7 @@ class Team extends JetstreamTeam
      *
      * @var array<string, class-string>
      */
-    protected $dispatchesEvents = [
-        'created' => TeamCreated::class,
-        'updated' => TeamUpdated::class,
-        'deleted' => TeamDeleted::class,
-    ];
+    // ...existing code...
 
     /**
      * Get the attributes that should be cast.
